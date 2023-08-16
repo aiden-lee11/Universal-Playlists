@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Playlist Adjusted Successfully</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .container {
+            text-align: center;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            color: #333;
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+
+        p {
+            color: #666;
+            font-size: 18px;
+            margin-bottom: 20px;
+        }
+
+        .playlist-name {
+            font-weight: bold; /* Make the playlist_name bold */
+            color: black; /* Display playlist_name in black */
+        }
+
+        .sign-out-button {
+            background-color: #1DB954;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 18px;
+            transition: background-color 0.3s ease-in-out;
+        }
+
+        .sign-out-button:hover {
+            background-color: #168E3A;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Playlist Adjusted Successfully</h1>
+        <p>Thank you for using Universal Playlists to adjust <span class="playlist-name">{{ playlist_name }}</span>!</p>
+        <button class="sign-out-button" onclick="sign_out()">Sign Out</button>
+        <script>
+            function sign_out() {
+                // Your sign_out() function logic here
+                // Redirect to the sign_out() function
+                window.location.href = "{{ url_for('sign_out') }}";
+            }
+        </script>
+    </div>
+</body>
+</html>

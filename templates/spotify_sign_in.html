@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Welcome To Universal Playlist!</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+
+        .container {
+            text-align: center;
+        }
+
+        .sign-in-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .sign-in-header {
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+
+        .sign-in-button {
+            display: inline-block;
+            background-color: #1DB954;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 18px;
+            text-decoration: none;
+            transition: background-color 0.3s ease-in-out;
+        }
+
+        .sign-in-button:hover {
+            background-color: #168E3A;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sign-in-container">
+            <h2 class="sign-in-header">Welcome To Universal Playlist!</h2>
+            <a class="sign-in-button" href="{{ auth_url }}">Spotify Sign in</a>
+        </div>
+    </div>
+</body>
+</html>

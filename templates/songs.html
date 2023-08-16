@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Playlist Selection</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+
+        .container {
+            text-align: center;
+        }
+
+        .playlist-scroll-container {
+            display: flex;
+            justify-content: center;
+            overflow: auto;
+            max-height: 70vh; /* Adjust the max height as needed */
+        }
+
+        .playlist-container {
+            display: flex;
+            flex-direction: column;
+            margin-top: 10px;
+            align-items: flex-start;
+            margin-bottom: 10px;
+        }
+
+        .playlist {
+            flex: 1;
+            padding: 20px;
+        }
+
+        .playlist h2 {
+            color: #333; /* Default color for playlist title */
+        }
+
+        .playlist ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .playlist li {
+            margin-bottom: 5px;
+            color: #333; /* Default color for song items */
+        }
+
+        .spotify-songs li {
+            color: darkgreen; /* Dark green color for Spotify songs */
+        }
+
+        .apple-songs li {
+            color: red; /* Red color for Apple Music songs */
+        }
+
+        .centered-button {
+            margin-top: 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .centered-button button {
+            padding: 5px 10px;
+        }
+
+        .playlist-name-input {
+            margin-top: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .playlist-name-input label {
+            margin-bottom: 5px;
+        }
+
+        .playlist-name-input input[type="text"] {
+            padding: 5px;
+        }
+
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="playlist-scroll-container">
+            <div class="playlist-container">
+                <div class="playlist spotify-songs">
+                    <h2>Spotify Playlist ━ {{ spotify_playlist_name_id[0] }}</h2>
+                    <ul>
+                        {% for song in songs_spotify_playlist %}
+                        <li>{{ song }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+            <div class="playlist-container">
+                <div class="playlist apple-songs">
+                    <h2>Apple Music Playlist ━ {{ apple_music_playlist_name_globalId_id[0] }}</h2>
+                    <ul>
+                        {% for song in songs_apple_music_playlist %}
+                        <li>{{ song }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div class="centered-button">
+            {% if playlist_action == 'create_spotify'%}
+                <form action="{{ url_for('spotify_write_new_playlist') }}" method="POST">
+                    <input type="hidden" name="apple_music_playlist_name_globalId_id" value="{{ apple_music_playlist_name_globalId_id }}">
+                    <input type="hidden" name="spotify_playlist_name_id" value="{{ spotify_playlist_name_id }}">
+                    <input type="hidden" name="spotify_user_id" value="{{ spotify_user_id }}">
+                    <div class="playlist-name-input">
+                        <label for="playlist_name">New Playlist Name:</label>
+                        <input type="text" id="playlist_name" name="playlist_name" required>
+                    </div>
+                    <button type="submit">Confirm</button>
+                </form>
+            {% elif playlist_action == 'create_apple'%}
+                <form action="{{ url_for('apple_write_new_playlist') }}" method="POST">
+                    <input type="hidden" name="playlist_action" value="{{ playlist_action }}">
+                    <input type="hidden" name="spotify_playlist_name_id" value="{{ spotify_playlist_name_id }}">
+                    <input type="hidden" name="apple_music_playlist_name_globalId_id" value="{{ apple_music_playlist_name_globalId_id }}">
+                    <div class="playlist-name-input">
+                        <label for="playlist_name">New Playlist Name:</label>
+                        <input type="text" id="playlist_name" name="playlist_name" required>
+                    </div>
+                    <button type="submit">Confirm</button>
+                </form>
+            {% elif playlist_action == 'add_to_spotify'%}
+                <form action="{{ url_for('spotify_write_existing_playlist') }}" method="POST">
+                    <input type="hidden" name="playlist_action" value="{{ playlist_action }}">
+                    <input type="hidden" name="spotify_playlist_name_id" value="{{ spotify_playlist_name_id }}">
+                    <input type="hidden" name="apple_music_playlist_name_globalId_id" value="{{ apple_music_playlist_name_globalId_id }}">
+                    <button type="submit">Confirm</button>
+                </form>
+            {% elif playlist_action == 'add_to_apple'%}
+                <form action="{{ url_for('apple_write_existing_playlist') }}" method="POST">
+                    <input type="hidden" name="playlist_action" value="{{ playlist_action }}">
+                    <input type="hidden" name="spotify_playlist_name_id" value="{{ spotify_playlist_name_id }}">
+                    <input type="hidden" name="apple_music_playlist_name_globalId_id" value="{{ apple_music_playlist_name_globalId_id }}">
+                    <button type="submit">Confirm</button>
+                </form>
+            {% elif playlist_action == 'add_to_both'%}
+                <form action="{{ url_for('add_to_both') }}" method="POST">
+                    <input type="hidden" name="playlist_action" value="{{ playlist_action }}">
+                    <input type="hidden" name="spotify_playlist_name_id" value="{{ spotify_playlist_name_id }}">
+                    <input type="hidden" name="apple_music_playlist_name_globalId_id" value="{{ apple_music_playlist_name_globalId_id }}">
+                    <button type="submit">Confirm</button>
+                </form>
+            {% endif %}
+    <div>
+</body>
+</html>

@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome To Universal Playlist!</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .container {
+            text-align: center;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            color: #333;
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+
+        button {
+            background-color: #FF4747;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 18px;
+            transition: background-color 0.3s ease-in-out;
+        }
+
+        button:hover {
+            background-color: #FF4747;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Welcome To Universal Playlist!</h1>
+        
+        <!-- Add a button to initiate the MusicKit loading -->
+        <button id="loadMusicKit">Apple Music Login</button>
+
+    <!-- ... Previous HTML code ... -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+    let userToken = null;
+
+    document.getElementById("loadMusicKit").addEventListener("click", function() {
+        document.addEventListener('musickitloaded', function() {
+            MusicKit.configure({
+                developerToken: 'eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6IjgyNEE3QUIyQVQifQ.eyJpYXQiOjE2OTE2MTI2MDgsImV4cCI6MTcwNzE2NDYwOCwiaXNzIjoiSlRWWEEzN1RLMiJ9.KBZsegf5Z63C0MAOwPMcFja25YgseGqC8j-XsGLAUO9pErip28e3wliV6GrW7P_pIjjo4JQDdsqwNbc9yPgRTw',
+                app: {
+                    name: 'pls-app',
+                    build: '1'
+                }
+            });
+            console.log('got here')
+            let music = MusicKit.getInstance();
+
+            music.authorize().then(function(response) {
+                userToken = response
+                console.log("User Token", userToken);
+                $.ajax({
+                    type: 'POST',
+                    url: 'apple_sign_in/',
+                    contentType: 'application/json',  // Set the content type to JSON
+                    data: JSON.stringify({ userToken: userToken }),  // Send the user token as JSON
+                    success: function(response) {
+                        console.log('Data sent successfully:', response);
+                        // Redirect to the desired page after the data is sent
+                        window.location.href = '/display_playlist';
+                    },
+                    error: function(response) {
+                        console.log('Error sending data:', response);
+                    }
+                });
+            });
+        });
+
+        // Load MusicKit JS script from Apple CDN
+        (function(d, script) {
+            script = d.createElement('script');
+            script.type = 'text/javascript';
+            script.async = true;
+            script.src = 'https://js-cdn.music.apple.com/musickit/v1/musickit.js';
+            script.onload = function() {
+                document.dispatchEvent(new Event('musickitloaded'));
+            };
+            d.getElementsByTagName('head')[0].appendChild(script);
+        }(document));
+
+    });
+</script>
+
+</body>
+</html>
