@@ -61,11 +61,11 @@ def display_playlist():
     if not auth_manager.get_cached_token():
         return redirect('/')
     sp = spotipy.Spotify(auth_manager=auth_manager)
-    apple_client = AppleMusicClient(team_id= 'TEAM_ID', 
-                                    key_id='KEY_ID', 
-                                    private_key='PRIVATE_KEY', 
+    apple_client = AppleMusicClient(team_id= 'team_id', 
+                                    key_id='key_id', 
+                                    private_key='private_key', 
                                     access_token=session['apple_user_token'],
-                                    timeout=120)
+                                     )
     total_spotify_playlists = sp.user_playlists(sp.me()['id'])['items']
     spotify_playlist_names_ids = []
     for item in total_spotify_playlists: 
@@ -91,7 +91,26 @@ def display_tracks():
     songs_in_spotify_playlist = get_track_details(spotify_playlist_name_id[1], returner='name',session_cache_path=session_cache_path)
     apple_url = f'https://music.apple.com/us/playlist/{apple_music_playlist_name_globalId_id[2]}/{apple_music_playlist_name_globalId_id[1]}'
     songs_in_apple_music_playlist = get_songs_from_apple_playlist(playlist_url=apple_url, returner='songs')
-    return render_template('songs.html', 
+    if playlist_action == 'apple_to_blank_spotify': 
+        return render_template('songs_apple.html', 
+                           songs_spotify_playlist = songs_in_spotify_playlist,
+                           songs_apple_music_playlist = songs_in_apple_music_playlist,
+                           spotify_playlist_name_id = spotify_playlist_name_id,
+                           apple_music_playlist_name_globalId_id = apple_music_playlist_name_globalId_id,
+                           spotify_user_id = sp.me()['id'],
+                           playlist_action = playlist_action
+                           ) 
+    elif playlist_action == 'spotify_to_blank_apple': 
+        return render_template('songs_spotify.html', 
+                           songs_spotify_playlist = songs_in_spotify_playlist,
+                           songs_apple_music_playlist = songs_in_apple_music_playlist,
+                           spotify_playlist_name_id = spotify_playlist_name_id,
+                           apple_music_playlist_name_globalId_id = apple_music_playlist_name_globalId_id,
+                           spotify_user_id = sp.me()['id'],
+                           playlist_action = playlist_action
+                           ) 
+    else:
+        return render_template('songs.html', 
                            songs_spotify_playlist = songs_in_spotify_playlist,
                            songs_apple_music_playlist = songs_in_apple_music_playlist,
                            spotify_playlist_name_id = spotify_playlist_name_id,
@@ -130,11 +149,11 @@ def apple_write_new_playlist():
     if not auth_manager.get_cached_token():
         return redirect('/')
     token = session['apple_user_token']
-    apple_client = AppleMusicClient(team_id= 'TEAM_ID', 
-                                    key_id='KEY_ID', 
-                                    private_key='PRIVATE_KEY', 
-                                    access_token=session['apple_user_token'],
-                                    timeout=120)
+    apple_client = AppleMusicClient(team_id= 'team_id', 
+                                    key_id='key_id', 
+                                    private_key='private_key', 
+                                    access_token=token,
+                             )
     playlist_name = request.form.get('playlist_name')
     spotify_playlist_name_id = clean(request.form.get('spotify_playlist_name_id'))
     apple_music_playlist_name_globalId_id = clean(request.form.get('apple_music_playlist_name_globalId_id'))
@@ -144,10 +163,11 @@ def apple_write_new_playlist():
         apple_music_playlist_track_isrc = get_track_details_from_uris(track_uris=apple_songs_to_spotify_uris(playlist_url=apple_url, token=auth_manager.get_access_token()['access_token']), returner='isrc',
                                                                 session_cache_path=session_cache_path,)
     except Exception as e:
-        print('inside this block')
         return str(e)
     info_to_add = difference_with_tuples(apple_music_playlist_track_isrc, spotify_playlist_track_isrcs_album_name) # Holds isrcs in spot 1 of tuple and album names in spot 2
-    ids = list(set(get_apple_id_from_isrc(isrcs = [i[0] for i in info_to_add], album_names=[i[1] for i in info_to_add], token=token) + clean_ids(get_songs_from_apple_playlist(playlist_url=apple_url, returner='id'))))
+    add_to_apple_ids, unmatched_indices = get_apple_id_from_isrc(isrcs = [i[0] for i in info_to_add], album_names=[i[1] for i in info_to_add], token=token)
+    unmatched_songs, unmatched_artists = unmatched_details(indices=unmatched_indices, spotify_playlist_id=spotify_playlist_name_id[1], session_cache_path=session_cache_path)
+    ids = list(set(add_to_apple_ids + clean_ids(get_songs_from_apple_playlist(playlist_url=apple_url, returner='id'))))
     apple_client.user_playlist_create(name=playlist_name, description=description)
     time.sleep(7.5)
     apple_playlists = apple_client.user_playlists(limit=50)['data']
@@ -159,7 +179,7 @@ def apple_write_new_playlist():
         except:
             pass
     apple_client.user_playlist_add_tracks(id=new_playlist_id, track_ids=ids)
-    return render_template('sign_out.html', playlist_name = playlist_name)
+    return render_template('sign_out.html', playlist_name = playlist_name, unmatched_songs=unmatched_songs, unmatched_artists=unmatched_artists)
 
 @app.route('/spotify_write_existing_playlist', methods=['POST']) # Working as of 8/13/23
 def spotify_write_existing_playlist():
@@ -190,42 +210,92 @@ def apple_write_existing_playlist():
     apple_music_playlist_name_globalId_id = clean(request.form.get('apple_music_playlist_name_globalId_id'))
     apple_url = f'https://music.apple.com/us/playlist/{apple_music_playlist_name_globalId_id[2]}/{apple_music_playlist_name_globalId_id[1]}'
     try:
-        apple_client = AppleMusicClient(team_id= 'TEAM_ID', 
-                                    key_id='KEY_ID', 
-                                    private_key='PRIVATE_KEY', 
-                                    access_token=session['apple_user_token'],
-                                    timeout=120)
+        apple_client = AppleMusicClient(team_id= 'team_id', 
+                                        key_id='key_id', 
+                                        private_key='private_key', 
+                                        access_token=apple_token,
+                             )
         spotify_uris = get_track_details(playlist_id=spotify_playlist_name_id[1], returner='uri', session_cache_path=session_cache_path)
         apple_uris = apple_songs_to_spotify_uris(playlist_url=apple_url, token=spotify_token)
-        add_to_apple = uri_to_appleID(track_uris=difference(spotify_uris, apple_uris),apple_token=apple_token, session_cache_path=session_cache_path)
-        apple_client.user_playlist_add_tracks(id=apple_music_playlist_name_globalId_id[2], track_ids=add_to_apple)
+        add_to_apple_ids, unmatched_indices= uri_to_appleID(track_uris=difference(spotify_uris, apple_uris),apple_token=apple_token, session_cache_path=session_cache_path)
+        unmatched_songs, unmatched_artists = unmatched_details(indices=unmatched_indices, spotify_playlist_id=spotify_playlist_name_id[1], session_cache_path=session_cache_path)
+        apple_client.user_playlist_add_tracks(id=apple_music_playlist_name_globalId_id[2], track_ids=add_to_apple_ids)
     except Exception as e:
         return str(e)
-    return render_template('sign_out.html', playlist_name = apple_music_playlist_name_globalId_id[0])
+    return render_template('sign_out.html', playlist_name = apple_music_playlist_name_globalId_id[0], unmatched_songs= unmatched_songs, unmatched_artists=unmatched_artists)
 
-@app.route('/add_to_both', methods= ['POST']) # Working as of 8/13/23
+@app.route('/add_to_both', methods= ['POST']) # Works as of 8/13/23 WOOOOOO 
 def add_to_both():
     auth_manager = spotipy.oauth2.SpotifyOAuth(cache_path=session_cache_path())
     if not auth_manager.get_cached_token():
         return redirect('/')
     apple_token=session['apple_user_token']
     spotify_token = auth_manager.get_access_token()['access_token']
-    apple_client = AppleMusicClient(team_id= 'TEAM_ID', 
-                                    key_id='KEY_ID', 
-                                    private_key='PRIVATE_KEY', 
-                                    access_token=session['apple_user_token'],
-                                    timeout=120)
+    apple_client = AppleMusicClient(team_id= 'team_id', 
+                                    key_id='key_id', 
+                                    private_key='private_key', 
+                                    access_token=apple_token,
+                            )
     spotify_playlist_name_id = clean(request.form.get('spotify_playlist_name_id'))
     apple_music_playlist_name_globalId_id = clean(request.form.get('apple_music_playlist_name_globalId_id'))
     apple_url = f'https://music.apple.com/us/playlist/{apple_music_playlist_name_globalId_id[2]}/{apple_music_playlist_name_globalId_id[1]}'
     spotify_uris = get_track_details(playlist_id=spotify_playlist_name_id[1], returner='uri', session_cache_path=session_cache_path)
     apple_uris = apple_songs_to_spotify_uris(playlist_url=apple_url, token=spotify_token)
     add_to_spotify = difference(apple_uris, spotify_uris)
-    add_to_apple = uri_to_appleID(track_uris=difference(spotify_uris, apple_uris),apple_token=apple_token, session_cache_path=session_cache_path)
-    apple_client.user_playlist_add_tracks(id=apple_music_playlist_name_globalId_id[2], track_ids=add_to_apple)
+    add_to_apple_ids, unmatched_indices= uri_to_appleID(track_uris=difference(spotify_uris, apple_uris),apple_token=apple_token, session_cache_path=session_cache_path)
+    unmatched_songs, unmatched_artists = unmatched_details(indices=unmatched_indices, spotify_playlist_id=spotify_playlist_name_id[1], session_cache_path=session_cache_path)
+    apple_client.user_playlist_add_tracks(id=apple_music_playlist_name_globalId_id[2], track_ids=add_to_apple_ids)
     spotify_add_songs(playlist_id=spotify_playlist_name_id[1],track_uris=add_to_spotify, session_cache_path=session_cache_path)
-    return render_template('sign_out.html', playlist_name = f"{spotify_playlist_name_id[0]} and {apple_music_playlist_name_globalId_id[0]}")
+    return render_template('sign_out.html', playlist_name = f"{spotify_playlist_name_id[0]} and {apple_music_playlist_name_globalId_id[0]}", unmatched_songs= unmatched_songs, unmatched_artists=unmatched_artists)
         
+@app.route('/apple_to_blank_spotify', methods= ['POST'])
+def apple_to_blank_spotify():
+    auth_manager = spotipy.oauth2.SpotifyOAuth(cache_path=session_cache_path())
+    if not auth_manager.get_cached_token():
+        return redirect('/')
+    sp = spotipy.Spotify(auth_manager=auth_manager)
+    spotify_token = auth_manager.get_access_token()['access_token']
+    apple_music_playlist_name_globalId_id = clean(request.form.get('apple_music_playlist_name_globalId_id'))
+    playlist_name = f"{apple_music_playlist_name_globalId_id[0]} by Universal Playlists"
+    spotify_user_id = request.form.get('spotify_user_id')
+    apple_url = f'https://music.apple.com/us/playlist/{apple_music_playlist_name_globalId_id[2]}/{apple_music_playlist_name_globalId_id[1]}'
+    apple_uris = apple_songs_to_spotify_uris(playlist_url=apple_url, token=spotify_token)
+    sp.user_playlist_create(user=spotify_user_id, name=playlist_name, description=description)
+    for item in sp.user_playlists(spotify_user_id)['items']:
+        if item['owner']['id'] == spotify_user_id and item['description'] == description and item['name'] == playlist_name:
+            playlist_id = item['id']
+    spotify_add_songs(playlist_id=playlist_id, track_uris=apple_uris, session_cache_path=session_cache_path)
+    return render_template('sign_out.html', playlist_name=playlist_name)
+
+@app.route('/spotify_to_blank_apple', methods= ['POST'])
+def spotify_to_blank_apple():
+    auth_manager = spotipy.oauth2.SpotifyOAuth(cache_path=session_cache_path())
+    if not auth_manager.get_cached_token():
+        return redirect('/')
+    token = session['apple_user_token']
+    apple_client = AppleMusicClient(team_id= 'team_id', 
+                                    key_id='key_id', 
+                                    private_key='private_key', 
+                                    access_token=token,
+                             )
+    spotify_playlist_name_id = clean(request.form.get('spotify_playlist_name_id'))
+    playlist_name = f"{spotify_playlist_name_id[0]} by Universal Playlists"
+    spotify_playlist_track_isrcs_album_name = (get_track_details(playlist_id=spotify_playlist_name_id[1], returner='isrc_album_name', session_cache_path=session_cache_path))
+    add_to_apple_ids, unmatched_indices = get_apple_id_from_isrc(isrcs = [i[0] for i in spotify_playlist_track_isrcs_album_name], album_names=[i[1] for i in spotify_playlist_track_isrcs_album_name], token=token)
+    unmatched_songs, unmatched_artists = unmatched_details(indices=unmatched_indices, spotify_playlist_id=spotify_playlist_name_id[1], session_cache_path=session_cache_path)
+    apple_client.user_playlist_create(name=playlist_name, description=description)
+    time.sleep(7.5)
+    apple_playlists = apple_client.user_playlists(limit=50)['data']
+    for item in apple_playlists:    
+        try:
+            if item['attributes']['name'] == playlist_name and item['attributes']['description']['standard'] == description:
+                new_playlist_id = item['id']
+                break
+        except:
+            pass
+    apple_client.user_playlist_add_tracks(id=new_playlist_id, track_ids=add_to_apple_ids)
+    return render_template('sign_out.html', playlist_name = playlist_name, unmatched_songs=unmatched_songs, unmatched_artists=unmatched_artists)
+    
 @app.route('/sign_out')
 def sign_out():
     try:

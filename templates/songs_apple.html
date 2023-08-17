@@ -90,16 +90,6 @@
     <div class="container">
         <div class="playlist-scroll-container">
             <div class="playlist-container">
-                <div class="playlist spotify-songs">
-                    <h2>Spotify Playlist ━ {{ spotify_playlist_name_id[0] }}</h2>
-                    <ul>
-                        {% for song in songs_spotify_playlist %}
-                        <li>{{ song }}</li>
-                        {% endfor %}
-                    </ul>
-                </div>
-            </div>
-            <div class="playlist-container">
                 <div class="playlist apple-songs">
                     <h2>Apple Music Playlist ━ {{ apple_music_playlist_name_globalId_id[0] }}</h2>
                     <ul>

@@ -47,10 +47,26 @@
             cursor: pointer;
             font-size: 18px;
             transition: background-color 0.3s ease-in-out;
+            margin-top: 5px;
         }
 
         .sign-out-button:hover {
             background-color: #168E3A;
+        }
+
+        .unmatched-list {
+            margin-top: 10px;
+            text-align: left;
+        }
+        
+        .unmatched-item {
+            margin-bottom: 5px;
+            color: #666;
+            font-size: 18px;
+        }
+        .unmatched-header {
+            font-weight: bold;
+            color: darkred;
         }
     </style>
 </head>
@@ -58,6 +74,14 @@
     <div class="container">
         <h1>Playlist Adjusted Successfully</h1>
         <p>Thank you for using Universal Playlists to adjust <span class="playlist-name">{{ playlist_name }}</span>!</p>
+        {% if unmatched_songs %}
+        <p class="unmatched-header">{{ unmatched_songs|length }} unmatched Spotify songs</p>
+        <div class="unmatched-list">
+            {% for i in range(unmatched_songs|length) %}
+                <div class="unmatched-item">{{ unmatched_songs[i] }} by {{ unmatched_artists[i] }}</div>
+            {% endfor %}
+        </div>
+        {% endif %}
         <button class="sign-out-button" onclick="sign_out()">Sign Out</button>
         <script>
             function sign_out() {

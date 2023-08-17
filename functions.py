@@ -41,6 +41,9 @@ def get_track_details(playlist_id, returner, session_cache_path):
                 track_detail = item['track']['external_ids']['isrc'], item['track']['uri']
             elif returner == 'album_name':
                 track_detail = item['track']['album']['name']
+            elif returner == 'name_artist':
+                track_detail = item['track']['name'], item['track']['artists'][0]['name']
+
                 
             track_details.append(track_detail)
         if(len(current) < 50):
@@ -70,8 +73,8 @@ def spotify_add_songs(playlist_id, track_uris,session_cache_path):
 def create_spotify_oauth():
     redirect_uri = url_for('index', _external=True, _scheme=request.scheme)
     return SpotifyOAuth(
-        client_id="CLIENT_ID",
-        client_secret="CLIENT_SECRET",
+        client_id="client_id",
+        client_secret="client_secret",
         redirect_uri=redirect_uri,
         scope="playlist-read-private playlist-read-collaborative playlist-modify-private playlist-modify-public",  
         cache_path=session_cache_path(),
@@ -118,8 +121,8 @@ def get_songs_from_apple_playlist(playlist_url, returner):
         soup = BeautifulSoup(r.content, 'html.parser')
         divs = soup.find_all('meta', {'property': 'music:song'})
         songs = []
-    except Exception:
-        print('here')
+    except:
+        pass
     for div in divs:
         try:
             url = re.search(r'https://[^"]+', str(div)).group()
@@ -133,8 +136,8 @@ def get_songs_from_apple_playlist(playlist_url, returner):
                 songs.append(split_info(song_info=song_info, returner = 'songs'))
             else: #returner == id
                 songs.append(song_id)
-        except Exception:
-            print('no here')
+        except:
+            pass
         else: 
             pass
             
@@ -213,22 +216,46 @@ def signal_last(it:Iterable[Any]) -> Iterable[Tuple[bool, Any]]:
     yield True, ret_var
 
 def get_apple_id_from_isrc(isrcs, album_names, token):
-    apple_client = AppleMusicClient(team_id= 'TEAM_ID', 
-                                    key_id='KEY_ID', 
-                                    private_key='PRIVATE_KEY', 
-                                    access_token=session['apple_user_token'],
-                                    timeout=120)
-    ids = []
-    print(len(isrcs))
+    apple_client = AppleMusicClient(team_id= 'team_id', 
+                                key_id='key_id', 
+                                private_key='private_key', 
+                                access_token=token)
+    ids, unmatched = [], []
     for i in range(len(isrcs)):
-        song_details = apple_client.get_songs_by_isrc(isrc=isrcs[i])['data']
+        song_details = []
+        for _ in range(10):
+            try:    
+                song_details = apple_client.get_songs_by_isrc(isrc=isrcs[i])['data']
+                break
+            except Exception as e: 
+                pass
         if len(song_details) == 1:
-            ids.append(song_details['id'])
-        else:
+            ids.append(song_details[0]['id'])
+        elif len(song_details) > 0:
             for song in song_details:
                 if song['attributes']['albumName'] == album_names[i]:
                     ids.append(song['id'])
-    return ids
+                    break
+                elif (f"{song['attributes']['name']} - Single" in song['attributes']['albumName'] 
+                      or f"{album_names[i]} - Single" == song['attributes']['name'] 
+                      or album_names[i].replace(" ", "").lower().strip() in song['attributes']['albumName'].replace(" ", "").lower().strip()):
+                    ids.append(song['id'])
+                    break
+        else:
+            unmatched.append(i)
+    return ids, unmatched
+
+def unmatched_details(indices, spotify_playlist_id, session_cache_path):
+    unmatched_song_names, unmatched_artist_names = [], []
+    total_details = get_track_details(playlist_id=spotify_playlist_id, returner='name_artist', session_cache_path=session_cache_path)
+    total_song_names, total_artist_names = [i[0] for i in total_details], [i[1] for i in total_details]
+    for index in indices:
+        unmatched_song_names.append(total_song_names[index])
+        unmatched_artist_names.append(total_artist_names[index])
+    return unmatched_song_names, unmatched_artist_names
+        
+    
+    
 
 def get_track_details_from_uris(track_uris, returner, session_cache_path):
     auth_manager = spotipy.oauth2.SpotifyOAuth(cache_path=session_cache_path())

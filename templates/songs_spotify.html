@@ -99,16 +99,6 @@
                     </ul>
                 </div>
             </div>
-            <div class="playlist-container">
-                <div class="playlist apple-songs">
-                    <h2>Apple Music Playlist ━ {{ apple_music_playlist_name_globalId_id[0] }}</h2>
-                    <ul>
-                        {% for song in songs_apple_music_playlist %}
-                        <li>{{ song }}</li>
-                        {% endfor %}
-                    </ul>
-                </div>
-            </div>
         </div>
         <div class="centered-button">
             {% if playlist_action == 'create_spotify'%}
