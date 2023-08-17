@@ -89,6 +89,7 @@
                 // Redirect to the sign_out() function
                 window.location.href = "{{ url_for('sign_out') }}";
             }
+            localStorage.clear(); //clears apple music login
         </script>
     </div>
 </body>
